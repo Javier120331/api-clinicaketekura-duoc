@@ -357,6 +357,41 @@ app.get("/api/copago/:idAtencion", async (req, res) => {
   }
 });
 
+// Endpoint para calcular monto final (usa pkg_gestion_atenciones.fn_calcular_monto_final)
+app.get("/api/monto-final/:idAtencion", async (req, res) => {
+  const idAtencion = req.params.idAtencion;
+  let connection;
+
+  try {
+    console.log(`GET /api/monto-final/${idAtencion} - Obteniendo conexi\u00f3n...`);
+    connection = await getConnection();
+
+    const sql = `
+      BEGIN
+        :ret := pkg_gestion_atenciones.fn_calcular_monto_final(:id);
+      END;`;
+
+    const binds = {
+      ret: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+      id: idAtencion
+    };
+
+    const result = await connection.execute(sql, binds);
+    const montoFinal = result.outBinds.ret;
+
+    console.log(`GET /api/monto-final/${idAtencion} - \u00c9xito. Monto final: ${montoFinal}`);
+    res.json({ atencion_id: idAtencion, monto_final: montoFinal, mensaje: "C\u00e1lculo exitoso" });
+
+  } catch (error) {
+    console.error(`Error en GET /api/monto-final/${idAtencion}:`, error.message);
+    res.status(500).json({ error: "Error al calcular monto final.", details: error.message });
+  } finally {
+    if (connection) {
+      try { await connection.close(); } catch (err) { console.error("Error al cerrar la conexi\u00f3n:", err); }
+    }
+  }
+});
+
 // --- ENDPOINT EJERCICIO 1 (VERSIÓN REACT) ---
 // (Este es para el botón "Generar Reporte" con parámetro)
 

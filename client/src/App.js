@@ -89,6 +89,53 @@ const Funcionalidad1_CalcularCopago = () => {
   );
 };
 
+// --- Nueva funcionalidad: Calcular Monto Final (basado en pkg_gestion_atenciones.fn_calcular_monto_final)
+const Funcionalidad_CalcularMontoFinal = () => {
+  const [idAtencion, setIdAtencion] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [resultado, setResultado] = useState(null);
+
+  const handleCalcular = async () => {
+    if (!idAtencion) {
+      setError("Por favor, ingresa un ID de Atención.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setResultado(null);
+    try {
+      const response = await axios.get(`http://localhost:3001/api/monto-final/${idAtencion}`);
+      const monto = response.data.monto_final;
+      const formateado = monto != null ? Number(monto).toLocaleString('es-CL') : 'N/A';
+      setResultado(`Monto final a pagar: $${formateado}`);
+    } catch (err) {
+      const errorMsg = err.response?.data?.details || err.message;
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card titulo="Nueva: Calcular Monto Final (pkg_gestion_atenciones)">
+      <p>Calcula el monto final que debe pagar el paciente para una atención (usa la lógica del paquete).</p>
+      <div className="form-grupo">
+        <input
+          type="number"
+          value={idAtencion}
+          onChange={(e) => setIdAtencion(e.target.value)}
+          placeholder="Ingresa ID Atención (Ej: 101)"
+        />
+        <button onClick={handleCalcular} disabled={loading}>
+          {loading ? "Calculando..." : "💰 Calcular Monto Final"}
+        </button>
+      </div>
+      <Resultado data={resultado} error={error} loading={loading} />
+    </Card>
+  );
+};
+
 // --- 2. Funcionalidad: Reporte Atenciones Costosas (Script 1) ---
 const Funcionalidad2_ReporteCostosas = () => {
   const [monto, setMonto] = useState(70000);
@@ -370,6 +417,7 @@ function App() {
       
       {/* Cada funcionalidad está encapsulada en su propia tarjeta */}
       <Funcionalidad1_CalcularCopago />
+    <Funcionalidad_CalcularMontoFinal />
       <Funcionalidad2_ReporteCostosas />
       <Funcionalidad3_GetPacientes />
       <Funcionalidad4_GetPacientePorRun />
